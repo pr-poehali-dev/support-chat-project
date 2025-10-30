@@ -171,85 +171,78 @@ def handler(event: Dict[str, Any], context: Any) -> Dict[str, Any]:
             }
         
         elif method == 'POST':
-            body = json.loads(event.get('body', '{}'))
-            client_name = body.get('client_name')
-            client_phone = body.get('client_phone')
-            session_id = body.get('session_id')
-            message_text = body.get('message')
-            
-            if not all([client_name, message_text]):
+            try:
+                body = json.loads(event.get('body', '{}'))
+                client_name = body.get('client_name')
+                client_phone = body.get('client_phone')
+                session_id = body.get('session_id')
+                message_text = body.get('message')
+                
+                print(f"POST /chats - Creating chat for: {client_name}, phone: {client_phone}")
+                
+                if not all([client_name, message_text]):
+                    return {
+                        'statusCode': 400,
+                        'headers': {'Content-Type': 'application/json', 'Access-Control-Allow-Origin': '*'},
+                        'body': json.dumps({'error': 'Missing required fields'}, ensure_ascii=False),
+                        'isBase64Encoded': False
+                    }
+                
+                # Генерация session_id если не передан
+                if not session_id:
+                    import uuid
+                    session_id = str(uuid.uuid4())
+                
+                print(f"Session ID: {session_id}")
+                
+                # Автоназначение оператора - временно NULL
+                operator_id = None
+                print(f"Assigned operator ID: {operator_id}")
+                
+                # Создать чат с таймером 15 минут (без client_id пока)
+                timer_expires = datetime.now() + timedelta(minutes=15)
+                print(f"Creating chat with timer expires at: {timer_expires}")
+                cur.execute(
+                    '''INSERT INTO t_p77168343_support_chat_project.chats 
+                       (client_name, client_phone, operator_id, session_id, 
+                        timer_expires_at, started_at, status)
+                       VALUES (%s, %s, %s, %s, %s, CURRENT_TIMESTAMP, 'active') 
+                       RETURNING id''',
+                    (client_name, client_phone, operator_id, session_id, timer_expires)
+                )
+                chat_id = cur.fetchone()[0]
+                print(f"Chat created with ID: {chat_id}")
+                
+                # Сохранить первое сообщение
+                print(f"Saving first message...")
+                cur.execute(
+                    '''INSERT INTO t_p77168343_support_chat_project.messages 
+                       (chat_id, sender_type, sender_name, content, created_at)
+                       VALUES (%s, 'client', %s, %s, CURRENT_TIMESTAMP)''',
+                    (chat_id, client_name, message_text)
+                )
+                
+                conn.commit()
+                print("Transaction committed successfully")
+                cur.close()
+                conn.close()
+                
                 return {
-                    'statusCode': 400,
+                    'statusCode': 201,
                     'headers': {'Content-Type': 'application/json', 'Access-Control-Allow-Origin': '*'},
-                    'body': json.dumps({'error': 'Missing required fields'}, ensure_ascii=False),
+                    'body': json.dumps({
+                        'id': chat_id, 
+                        'message': 'Chat created',
+                        'operator_id': operator_id,
+                        'session_id': session_id
+                    }, ensure_ascii=False),
                     'isBase64Encoded': False
                 }
-            
-            # Генерация session_id если не передан
-            if not session_id:
-                import uuid
-                session_id = str(uuid.uuid4())
-            
-            # Найти свободного оператора на линии (автоназначение)
-            cur.execute(
-                '''SELECT id FROM t_p77168343_support_chat_project.staff 
-                   WHERE on_line = true 
-                   ORDER BY RANDOM() 
-                   LIMIT 1'''
-            )
-            operator_row = cur.fetchone()
-            operator_id = operator_row[0] if operator_row else None
-            
-            # Создать или найти клиента
-            cur.execute(
-                '''INSERT INTO t_p77168343_support_chat_project.clients (phone, name, session_id, total_chats)
-                   VALUES (%s, %s, %s, 1)
-                   ON CONFLICT (session_id) DO UPDATE SET 
-                   name = EXCLUDED.name,
-                   phone = EXCLUDED.phone,
-                   total_chats = COALESCE(t_p77168343_support_chat_project.clients.total_chats, 0) + 1,
-                   last_interaction = CURRENT_TIMESTAMP,
-                   updated_at = CURRENT_TIMESTAMP
-                   RETURNING id''',
-                (client_phone, client_name, session_id)
-            )
-            client_id = cur.fetchone()[0]
-            
-            # Создать чат с таймером 15 минут
-            timer_expires = datetime.now() + timedelta(minutes=15)
-            cur.execute(
-                '''INSERT INTO t_p77168343_support_chat_project.chats 
-                   (client_name, client_phone, client_id, operator_id, session_id, 
-                    timer_expires_at, started_at, status)
-                   VALUES (%s, %s, %s, %s, %s, %s, CURRENT_TIMESTAMP, 'active') 
-                   RETURNING id''',
-                (client_name, client_phone, client_id, operator_id, session_id, timer_expires)
-            )
-            chat_id = cur.fetchone()[0]
-            
-            # Сохранить первое сообщение
-            cur.execute(
-                '''INSERT INTO t_p77168343_support_chat_project.messages 
-                   (chat_id, sender_type, sender_name, content, created_at)
-                   VALUES (%s, 'client', %s, %s, CURRENT_TIMESTAMP)''',
-                (chat_id, client_name, message_text)
-            )
-            
-            conn.commit()
-            cur.close()
-            conn.close()
-            
-            return {
-                'statusCode': 201,
-                'headers': {'Content-Type': 'application/json', 'Access-Control-Allow-Origin': '*'},
-                'body': json.dumps({
-                    'id': chat_id, 
-                    'message': 'Chat created',
-                    'operator_id': operator_id,
-                    'session_id': session_id
-                }, ensure_ascii=False),
-                'isBase64Encoded': False
-            }
+            except Exception as post_error:
+                import traceback
+                error_msg = f"POST Error: {str(post_error)}\nTrace: {traceback.format_exc()}"
+                print(error_msg)
+                raise
         
         elif method == 'PUT':
             body = json.loads(event.get('body', '{}'))
@@ -503,6 +496,13 @@ def handler(event: Dict[str, Any], context: Any) -> Dict[str, Any]:
             }
     
     except Exception as e:
+        import traceback
+        error_details = {
+            'error': str(e),
+            'type': type(e).__name__,
+            'traceback': traceback.format_exc()
+        }
+        print(f"Error in chats handler: {json.dumps(error_details, ensure_ascii=False)}")
         return {
             'statusCode': 500,
             'headers': {'Content-Type': 'application/json', 'Access-Control-Allow-Origin': '*'},
