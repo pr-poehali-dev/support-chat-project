@@ -8,6 +8,7 @@ import ChatList from './chats/ChatList';
 import MessageList from './chats/MessageList';
 import ChatTimer from './chats/ChatTimer';
 import CloseDialog from './chats/CloseDialog';
+import SaveClientDialog from './chats/SaveClientDialog';
 
 interface ChatsViewProps {
   user: any;
@@ -27,6 +28,7 @@ export default function ChatsView({ user }: ChatsViewProps) {
   const [newMessage, setNewMessage] = useState('');
   const [loading, setLoading] = useState(false);
   const [showCloseDialog, setShowCloseDialog] = useState(false);
+  const [showSaveClientDialog, setShowSaveClientDialog] = useState(false);
   const [operators, setOperators] = useState<any[]>([]);
   const { toast } = useToast();
 
@@ -143,6 +145,10 @@ export default function ChatsView({ user }: ChatsViewProps) {
     setMessages([]);
   };
 
+  const handleSaveClient = () => {
+    setShowSaveClientDialog(true);
+  };
+
   return (
     <div className="container mx-auto p-6">
       <div className="mb-6">
@@ -199,25 +205,35 @@ export default function ChatsView({ user }: ChatsViewProps) {
             <>
               <CardHeader>
                 <div className="flex items-center justify-between">
-                  <div>
+                  <div className="flex-1">
                     <CardTitle className="flex items-center gap-2">
                       <Icon name="User" size={20} />
                       {selectedChat.client_name || 'Клиент'}
                     </CardTitle>
-                    <CardDescription>
-                      ID чата: {selectedChat.id} • Создан: {new Date(selectedChat.created_at).toLocaleString('ru-RU')}
+                    <CardDescription className="flex items-center gap-3 mt-1">
+                      <span>ID чата: {selectedChat.id}</span>
+                      <span>•</span>
+                      <span>Создан: {new Date(selectedChat.created_at).toLocaleString('ru-RU')}</span>
                     </CardDescription>
                   </div>
                   <div className="flex items-center gap-2">
                     {selectedChat.status === 'active' && (
                       <>
+                        <Button 
+                          onClick={handleSaveClient} 
+                          variant="secondary"
+                          size="sm"
+                        >
+                          <Icon name="UserPlus" size={16} className="mr-2" />
+                          В базу клиентов
+                        </Button>
                         <ChatTimer
                           chat={selectedChat}
                           apiBase={API_BASE.chats}
                           onChatUpdate={handleChatUpdate}
                           onChatTransfer={handleChatTransfer}
                         />
-                        <Button onClick={() => setShowCloseDialog(true)} variant="outline">
+                        <Button onClick={() => setShowCloseDialog(true)} variant="outline" size="sm">
                           <Icon name="CheckCircle" size={16} className="mr-2" />
                           Закрыть
                         </Button>
@@ -247,14 +263,22 @@ export default function ChatsView({ user }: ChatsViewProps) {
       </div>
 
       {selectedChat && (
-        <CloseDialog
-          open={showCloseDialog}
-          onOpenChange={setShowCloseDialog}
-          chatId={selectedChat.id}
-          apiBase={API_BASE.chats}
-          operators={operators}
-          onSuccess={handleCloseSuccess}
-        />
+        <>
+          <CloseDialog
+            open={showCloseDialog}
+            onOpenChange={setShowCloseDialog}
+            chatId={selectedChat.id}
+            apiBase={API_BASE.chats}
+            operators={operators}
+            onSuccess={handleCloseSuccess}
+          />
+          <SaveClientDialog
+            open={showSaveClientDialog}
+            onOpenChange={setShowSaveClientDialog}
+            chat={selectedChat}
+            userName={user.name}
+          />
+        </>
       )}
     </div>
   );

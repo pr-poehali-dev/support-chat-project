@@ -1,4 +1,4 @@
-import { useState } from 'react';
+import { useState, useEffect } from 'react';
 import { Button } from '@/components/ui/button';
 import { Input } from '@/components/ui/input';
 import { Card, CardContent, CardDescription, CardHeader, CardTitle } from '@/components/ui/card';
@@ -28,93 +28,62 @@ const API_BASE = {
 
 export default function ClientView({ onLogin, user, onLogout }: ClientViewProps) {
   const [showStaffLogin, setShowStaffLogin] = useState(false);
-  const [clientName, setClientName] = useState('');
-  const [clientPhone, setClientPhone] = useState('');
   const [staffLogin, setStaffLogin] = useState('');
   const [staffPassword, setStaffPassword] = useState('');
   const [messages, setMessages] = useState<Message[]>([]);
   const [messageInput, setMessageInput] = useState('');
   const [chatId, setChatId] = useState<number | null>(null);
+  const [isInitializing, setIsInitializing] = useState(true);
 
   const { toast } = useToast();
 
-  const handleClientLogin = async (e: React.FormEvent) => {
-    e.preventDefault();
-    if (!clientName || !clientPhone) {
-      toast({
-        title: 'Ошибка',
-        description: 'Заполните все поля',
-        variant: 'destructive',
-      });
-      return;
+  useEffect(() => {
+    if (!user && !showStaffLogin) {
+      initializeClientChat();
     }
+  }, []);
 
+  const initializeClientChat = async () => {
     try {
-      const sessionId = `client_${Date.now()}_${Math.random().toString(36).substring(7)}`;
-      
-      console.log('Creating chat with data:', {
-        client_name: clientName,
-        client_phone: clientPhone,
-        session_id: sessionId,
-      });
+      const sessionId = `guest_${Date.now()}_${Math.random().toString(36).substring(7)}`;
       
       const response = await fetch(API_BASE.chats, {
         method: 'POST',
         headers: { 'Content-Type': 'application/json' },
         body: JSON.stringify({
-          client_name: clientName,
-          client_phone: clientPhone,
+          client_name: 'Гость',
+          client_phone: 'Не указан',
           session_id: sessionId,
-          message: `Здравствуйте! Меня зовут ${clientName}`,
+          message: 'Здравствуйте! Я хочу задать вопрос.',
         }),
       });
 
-      console.log('Response status:', response.status);
-      const responseText = await response.text();
-      console.log('Response body:', responseText);
-
       if (response.ok) {
-        const data = JSON.parse(responseText);
+        const data = await response.json();
         setChatId(data.id);
         
         setMessages([
           {
             id: '1',
             sender: 'operator',
-            text: `Здравствуйте, ${clientName}! Я оператор поддержки. Чем могу помочь?`,
+            text: 'Здравствуйте! Я оператор поддержки. Чем могу помочь?',
             timestamp: new Date(),
           },
         ]);
 
-        onLogin({ name: clientName, phone: clientPhone, role: 'client', sessionId });
-        
-        toast({
-          title: 'Добро пожаловать!',
-          description: 'Вы подключены к оператору',
-        });
+        onLogin({ name: 'Гость', phone: 'Не указан', role: 'client', sessionId, chatId: data.id });
       } else {
-        let errorMessage = 'Не удалось создать чат';
-        try {
-          const errorData = JSON.parse(responseText);
-          errorMessage = errorData.error || errorMessage;
-        } catch {
-          errorMessage = responseText || errorMessage;
-        }
-        
-        console.error('Chat creation failed:', errorMessage);
+        console.error('Failed to create chat');
         toast({
-          title: 'Ошибка',
-          description: errorMessage,
+          title: 'Ошибка подключения',
+          description: 'Не удалось подключиться к оператору',
           variant: 'destructive',
         });
       }
     } catch (error) {
-      console.error('Failed to create chat:', error);
-      toast({
-        title: 'Ошибка',
-        description: `Ошибка сети: ${error instanceof Error ? error.message : 'Неизвестная ошибка'}`,
-        variant: 'destructive',
-      });
+      console.error('Failed to initialize chat:', error);
+    } finally {
+      setIsInitializing(false);
     }
   };
 
@@ -177,7 +146,7 @@ export default function ClientView({ onLogin, user, onLogout }: ClientViewProps)
         body: JSON.stringify({
           chat_id: chatId,
           sender_type: 'client',
-          sender_name: user?.name || 'Клиент',
+          sender_name: user?.name || 'Гость',
           message_text: messageInput,
         }),
       });
@@ -206,16 +175,16 @@ export default function ClientView({ onLogin, user, onLogout }: ClientViewProps)
                 <Icon name="Headphones" size={20} className="text-white" />
               </div>
               <div>
-                <h2 className="font-semibold text-lg">{user.name}</h2>
+                <h2 className="font-semibold text-lg">Чат поддержки</h2>
                 <div className="flex items-center gap-2 text-sm text-muted-foreground">
                   <div className="w-2 h-2 rounded-full bg-green-500 animate-pulse"></div>
-                  <span>Клиент</span>
+                  <span>Оператор онлайн</span>
                 </div>
               </div>
             </div>
             <Button variant="ghost" size="sm" onClick={onLogout} className="text-muted-foreground hover:text-destructive">
-              <Icon name="LogOut" size={18} className="mr-2" />
-              Выход
+              <Icon name="X" size={18} className="mr-2" />
+              Закрыть чат
             </Button>
           </div>
 
@@ -223,8 +192,8 @@ export default function ClientView({ onLogin, user, onLogout }: ClientViewProps)
             <CardHeader className="border-b border-primary/20 pb-4">
               <div className="flex items-center justify-between">
                 <div>
-                  <CardTitle className="text-xl">Чат поддержки</CardTitle>
-                  <CardDescription>Оператор онлайн</CardDescription>
+                  <CardTitle className="text-xl">Чат с оператором</CardTitle>
+                  <CardDescription>Мы ответим на все ваши вопросы</CardDescription>
                 </div>
                 <div className="flex items-center gap-2 px-3 py-1.5 rounded-full bg-primary/10 border border-primary/20">
                   <div className="w-2 h-2 rounded-full bg-primary animate-pulse"></div>
@@ -316,17 +285,17 @@ export default function ClientView({ onLogin, user, onLogout }: ClientViewProps)
                   />
                 </div>
                 <div className="flex gap-2">
+                  <Button type="submit" className="flex-1 bg-gradient-to-r from-accent to-secondary">
+                    <Icon name="LogIn" size={18} className="mr-2" />
+                    Войти
+                  </Button>
                   <Button
                     type="button"
                     variant="outline"
                     onClick={() => setShowStaffLogin(false)}
-                    className="w-full"
+                    className="border-primary/20"
                   >
                     Назад
-                  </Button>
-                  <Button type="submit" className="w-full bg-gradient-to-r from-accent to-secondary hover:opacity-90">
-                    <Icon name="LogIn" size={18} className="mr-2" />
-                    Войти
                   </Button>
                 </div>
               </form>
@@ -337,65 +306,39 @@ export default function ClientView({ onLogin, user, onLogout }: ClientViewProps)
     );
   }
 
+  if (isInitializing) {
+    return (
+      <div className="min-h-screen flex items-center justify-center bg-gradient-to-br from-[#0F0F1E] via-[#1A1F2C] to-[#0F0F1E]">
+        <div className="text-center">
+          <Icon name="Loader2" size={48} className="animate-spin text-primary mx-auto mb-4" />
+          <p className="text-muted-foreground">Подключаемся к оператору...</p>
+        </div>
+      </div>
+    );
+  }
+
   return (
     <div className="min-h-screen flex items-center justify-center p-4 bg-gradient-to-br from-[#0F0F1E] via-[#1A1F2C] to-[#0F0F1E]">
-      <div className="w-full max-w-md space-y-6 animate-fade-in">
-        <div className="text-center space-y-2">
-          <div className="inline-flex items-center justify-center w-16 h-16 rounded-full bg-gradient-to-br from-primary to-accent mb-4">
-            <Icon name="Headphones" size={32} className="text-white" />
-          </div>
-          <h1 className="text-4xl font-bold bg-gradient-to-r from-primary via-accent to-secondary bg-clip-text text-transparent">
-            Поддержка
-          </h1>
-          <p className="text-muted-foreground">Мы на связи 24/7</p>
-        </div>
-
+      <div className="w-full max-w-md animate-fade-in">
         <Card className="border-primary/20 bg-card/50 backdrop-blur-sm">
-          <CardHeader>
-            <CardTitle className="text-2xl">Начать чат</CardTitle>
-            <CardDescription>Заполните форму для связи с оператором</CardDescription>
+          <CardHeader className="text-center">
+            <div className="w-16 h-16 mx-auto mb-4 rounded-full bg-gradient-to-br from-primary to-accent flex items-center justify-center">
+              <Icon name="Headphones" size={32} className="text-white" />
+            </div>
+            <CardTitle className="text-3xl mb-2">Поддержка</CardTitle>
+            <CardDescription>Мы на связи 24/7</CardDescription>
           </CardHeader>
-          <CardContent>
-            <form onSubmit={handleClientLogin} className="space-y-4">
-              <div className="space-y-2">
-                <Label htmlFor="name">Ваше имя</Label>
-                <Input
-                  id="name"
-                  placeholder="Иван Иванов"
-                  value={clientName}
-                  onChange={(e) => setClientName(e.target.value)}
-                  className="bg-background/50"
-                />
-              </div>
-              <div className="space-y-2">
-                <Label htmlFor="phone">Номер телефона</Label>
-                <Input
-                  id="phone"
-                  placeholder="+7 (999) 123-45-67"
-                  value={clientPhone}
-                  onChange={(e) => setClientPhone(e.target.value)}
-                  className="bg-background/50"
-                />
-              </div>
-              <Button type="submit" className="w-full bg-gradient-to-r from-primary to-accent hover:opacity-90 transition-opacity">
-                <Icon name="MessageCircle" size={18} className="mr-2" />
-                Начать чат
-              </Button>
-            </form>
+          <CardContent className="space-y-3">
+            <Button
+              onClick={() => setShowStaffLogin(true)}
+              variant="outline"
+              className="w-full border-accent/20 hover:bg-accent/10"
+            >
+              <Icon name="Shield" size={18} className="mr-2" />
+              Вход для сотрудников
+            </Button>
           </CardContent>
         </Card>
-
-        <div className="text-center">
-          <Button
-            variant="ghost"
-            size="sm"
-            onClick={() => setShowStaffLogin(true)}
-            className="text-muted-foreground hover:text-primary"
-          >
-            <Icon name="Shield" size={16} className="mr-2" />
-            Вход для сотрудников
-          </Button>
-        </div>
       </div>
     </div>
   );
