@@ -1,0 +1,30 @@
+{
+  "tests": [
+    {
+      "name": "Get all ratings",
+      "method": "GET",
+      "path": "/",
+      "expectedStatus": 200,
+      "expectedBody": [],
+      "bodyMatcher": "partial"
+    },
+    {
+      "name": "Create rating",
+      "method": "POST",
+      "path": "/",
+      "body": {
+        "chat_id": 1,
+        "operator_id": 2,
+        "rated_by": 3,
+        "score": 85,
+        "comment": "Good work"
+      },
+      "expectedStatus": 201,
+      "expectedBody": {
+        "id": "number",
+        "message": "string"
+      },
+      "bodyMatcher": "partial"
+    }
+  ]
+}

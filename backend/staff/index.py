@@ -34,7 +34,7 @@ def handler(event: Dict[str, Any], context: Any) -> Dict[str, Any]:
             
             if staff_id:
                 cur.execute(
-                    "SELECT id, login, name, role, permissions, created_at, updated_at FROM staff WHERE id = %s",
+                    "SELECT id, login, name, role, permissions, status, status_updated_at, created_at, updated_at FROM staff WHERE id = %s",
                     (staff_id,)
                 )
                 row = cur.fetchone()
@@ -45,14 +45,16 @@ def handler(event: Dict[str, Any], context: Any) -> Dict[str, Any]:
                         'name': row[2],
                         'role': row[3],
                         'permissions': row[4],
-                        'created_at': row[5].isoformat() if row[5] else None,
-                        'updated_at': row[6].isoformat() if row[6] else None
+                        'status': row[5],
+                        'status_updated_at': row[6].isoformat() if row[6] else None,
+                        'created_at': row[7].isoformat() if row[7] else None,
+                        'updated_at': row[8].isoformat() if row[8] else None
                     }
                 else:
                     result = None
             else:
                 cur.execute(
-                    "SELECT id, login, name, role, permissions, created_at, updated_at FROM staff ORDER BY created_at DESC"
+                    "SELECT id, login, name, role, permissions, status, status_updated_at, created_at, updated_at FROM staff ORDER BY created_at DESC"
                 )
                 rows = cur.fetchall()
                 result = [{
@@ -61,8 +63,10 @@ def handler(event: Dict[str, Any], context: Any) -> Dict[str, Any]:
                     'name': row[2],
                     'role': row[3],
                     'permissions': row[4],
-                    'created_at': row[5].isoformat() if row[5] else None,
-                    'updated_at': row[6].isoformat() if row[6] else None
+                    'status': row[5],
+                    'status_updated_at': row[6].isoformat() if row[6] else None,
+                    'created_at': row[7].isoformat() if row[7] else None,
+                    'updated_at': row[8].isoformat() if row[8] else None
                 } for row in rows]
             
             cur.close()
@@ -140,6 +144,10 @@ def handler(event: Dict[str, Any], context: Any) -> Dict[str, Any]:
             if 'permissions' in body:
                 update_fields.append("permissions = %s")
                 params.append(json.dumps(body['permissions']))
+            if 'status' in body:
+                update_fields.append("status = %s")
+                params.append(body['status'])
+                update_fields.append("status_updated_at = CURRENT_TIMESTAMP")
             
             if update_fields:
                 update_fields.append("updated_at = CURRENT_TIMESTAMP")
