@@ -1,0 +1,22 @@
+{
+  "tests": [
+    {
+      "name": "Login with valid credentials",
+      "method": "POST",
+      "path": "/",
+      "body": {
+        "login": "123",
+        "password": "803254"
+      },
+      "expectedStatus": 200,
+      "expectedBody": {
+        "id": "number",
+        "login": "string",
+        "name": "string",
+        "role": "string",
+        "permissions": {}
+      },
+      "bodyMatcher": "partial"
+    }
+  ]
+}

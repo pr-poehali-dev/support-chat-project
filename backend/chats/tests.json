@@ -1,0 +1,28 @@
+{
+  "tests": [
+    {
+      "name": "Get active chats",
+      "method": "GET",
+      "path": "/?status=active",
+      "expectedStatus": 200,
+      "expectedBody": [],
+      "bodyMatcher": "partial"
+    },
+    {
+      "name": "Create new chat",
+      "method": "POST",
+      "path": "/",
+      "body": {
+        "client_name": "Test Client",
+        "client_phone": "+7 999 123 45 67",
+        "message": "Hello"
+      },
+      "expectedStatus": 201,
+      "expectedBody": {
+        "id": "number",
+        "message": "string"
+      },
+      "bodyMatcher": "partial"
+    }
+  ]
+}

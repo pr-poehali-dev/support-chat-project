@@ -1,0 +1,21 @@
+{
+  "tests": [
+    {
+      "name": "Send message",
+      "method": "POST",
+      "path": "/",
+      "body": {
+        "chat_id": 1,
+        "sender_type": "client",
+        "sender_name": "Test User",
+        "message_text": "Hello, support!"
+      },
+      "expectedStatus": 201,
+      "expectedBody": {
+        "id": "number",
+        "message": "string"
+      },
+      "bodyMatcher": "partial"
+    }
+  ]
+}

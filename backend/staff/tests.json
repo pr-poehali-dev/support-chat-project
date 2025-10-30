@@ -1,0 +1,30 @@
+{
+  "tests": [
+    {
+      "name": "Get all staff",
+      "method": "GET",
+      "path": "/",
+      "expectedStatus": 200,
+      "expectedBody": [],
+      "bodyMatcher": "partial"
+    },
+    {
+      "name": "Create new staff",
+      "method": "POST",
+      "path": "/",
+      "body": {
+        "login": "test_user",
+        "password": "test123",
+        "name": "Test User",
+        "role": "operator",
+        "permissions": {"chats": {"active": true}}
+      },
+      "expectedStatus": 201,
+      "expectedBody": {
+        "id": "number",
+        "message": "string"
+      },
+      "bodyMatcher": "partial"
+    }
+  ]
+}
