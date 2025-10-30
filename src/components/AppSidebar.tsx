@@ -19,6 +19,8 @@ import { Button } from '@/components/ui/button';
 interface AppSidebarProps {
   user: any;
   onLogout: () => void;
+  currentView: string;
+  onViewChange: (view: string) => void;
 }
 
 const API_BASE = {
@@ -32,8 +34,7 @@ const statusConfig = {
   offline: { label: 'Не в сети', color: 'bg-gray-500', icon: 'CircleOff' },
 };
 
-export function AppSidebar({ user, onLogout }: AppSidebarProps) {
-  const [currentView, setCurrentView] = useState('chats');
+export function AppSidebar({ user, onLogout, currentView, onViewChange }: AppSidebarProps) {
   const [currentStatus, setCurrentStatus] = useState(user.status || 'offline');
 
   const handleStatusChange = async (newStatus: string) => {
@@ -102,16 +103,23 @@ export function AppSidebar({ user, onLogout }: AppSidebarProps) {
               {(isOperator || isOKK) && (
                 <>
                   <SidebarMenuItem>
-                    <SidebarMenuButton onClick={() => setCurrentView('chats')} isActive={currentView === 'chats'}>
+                    <SidebarMenuButton onClick={() => onViewChange('chats')} isActive={currentView === 'chats'}>
                       <Icon name="MessageSquare" size={18} />
                       <span>Мои чаты</span>
                     </SidebarMenuButton>
                   </SidebarMenuItem>
 
                   <SidebarMenuItem>
-                    <SidebarMenuButton onClick={() => setCurrentView('ratings')} isActive={currentView === 'ratings'}>
+                    <SidebarMenuButton onClick={() => onViewChange('ratings')} isActive={currentView === 'ratings'}>
                       <Icon name="Star" size={18} />
                       <span>Мои оценки</span>
+                    </SidebarMenuButton>
+                  </SidebarMenuItem>
+
+                  <SidebarMenuItem>
+                    <SidebarMenuButton onClick={() => onViewChange('results')} isActive={currentView === 'results'}>
+                      <Icon name="BarChart3" size={18} />
+                      <span>Результаты</span>
                     </SidebarMenuButton>
                   </SidebarMenuItem>
                 </>
@@ -120,16 +128,23 @@ export function AppSidebar({ user, onLogout }: AppSidebarProps) {
               {(isOKK || isSuperAdmin) && (
                 <>
                   <SidebarMenuItem>
-                    <SidebarMenuButton onClick={() => setCurrentView('qc')} isActive={currentView === 'qc'}>
+                    <SidebarMenuButton onClick={() => onViewChange('qc')} isActive={currentView === 'qc'}>
                       <Icon name="ClipboardCheck" size={18} />
                       <span>Портал QC</span>
                     </SidebarMenuButton>
                   </SidebarMenuItem>
 
                   <SidebarMenuItem>
-                    <SidebarMenuButton onClick={() => setCurrentView('monitoring')} isActive={currentView === 'monitoring'}>
+                    <SidebarMenuButton onClick={() => onViewChange('monitoring')} isActive={currentView === 'monitoring'}>
                       <Icon name="Monitor" size={18} />
                       <span>Мониторинг</span>
+                    </SidebarMenuButton>
+                  </SidebarMenuItem>
+
+                  <SidebarMenuItem>
+                    <SidebarMenuButton onClick={() => onViewChange('analytics')} isActive={currentView === 'analytics'}>
+                      <Icon name="TrendingUp" size={18} />
+                      <span>Аналитика</span>
                     </SidebarMenuButton>
                   </SidebarMenuItem>
                 </>
@@ -137,7 +152,7 @@ export function AppSidebar({ user, onLogout }: AppSidebarProps) {
 
               {isSuperAdmin && (
                 <SidebarMenuItem>
-                  <SidebarMenuButton onClick={() => setCurrentView('staff')} isActive={currentView === 'staff'}>
+                  <SidebarMenuButton onClick={() => onViewChange('staff')} isActive={currentView === 'staff'}>
                     <Icon name="Users" size={18} />
                     <span>Сотрудники</span>
                   </SidebarMenuButton>

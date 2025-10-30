@@ -1,12 +1,20 @@
-import ChatsView from './views/ChatsView';
 import QCPortalView from './views/QCPortalView';
 import MonitoringView from './views/MonitoringView';
 import StaffManagementView from './views/StaffManagementView';
+import AnalyticsView from './views/AnalyticsView';
 
 interface AdminViewProps {
   user: any;
+  currentView: string;
 }
 
-export default function AdminView({ user }: AdminViewProps) {
-  return <StaffManagementView user={user} />;
+export default function AdminView({ user, currentView }: AdminViewProps) {
+  return (
+    <>
+      {currentView === 'staff' && <StaffManagementView user={user} />}
+      {currentView === 'qc' && <QCPortalView user={user} />}
+      {currentView === 'monitoring' && <MonitoringView user={user} />}
+      {currentView === 'analytics' && <AnalyticsView user={user} />}
+    </>
+  );
 }
