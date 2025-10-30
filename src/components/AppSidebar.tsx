@@ -128,6 +128,13 @@ export function AppSidebar({ user, onLogout, currentView, onViewChange }: AppSid
               {(isOKK || isSuperAdmin) && (
                 <>
                   <SidebarMenuItem>
+                    <SidebarMenuButton onClick={() => onViewChange('clients')} isActive={currentView === 'clients'}>
+                      <Icon name="Users" size={18} />
+                      <span>Клиенты</span>
+                    </SidebarMenuButton>
+                  </SidebarMenuItem>
+
+                  <SidebarMenuItem>
                     <SidebarMenuButton onClick={() => onViewChange('qc')} isActive={currentView === 'qc'}>
                       <Icon name="ClipboardCheck" size={18} />
                       <span>Портал QC</span>

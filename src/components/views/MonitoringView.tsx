@@ -23,6 +23,7 @@ const statusConfig = {
 
 export default function MonitoringView({ user }: MonitoringViewProps) {
   const [operators, setOperators] = useState<any[]>([]);
+  const [operatorChats, setOperatorChats] = useState<Record<number, any>>({});
   const [stats, setStats] = useState({ active: 0, closed: 0, avgScore: 0 });
 
   useEffect(() => {
@@ -41,12 +42,21 @@ export default function MonitoringView({ user }: MonitoringViewProps) {
 
       if (staffRes.ok) {
         const staffData = await staffRes.json();
-        setOperators(staffData.filter((s: any) => s.role === 'operator'));
+        const ops = staffData.filter((s: any) => s.role === 'operator');
+        setOperators(ops);
       }
 
       if (chatsRes.ok) {
         const chatsData = await chatsRes.json();
         setStats(prev => ({ ...prev, active: chatsData.length }));
+        
+        const chatsByOperator: Record<number, any> = {};
+        chatsData.forEach((chat: any) => {
+          if (chat.operator_id) {
+            chatsByOperator[chat.operator_id] = chat;
+          }
+        });
+        setOperatorChats(chatsByOperator);
       }
 
       if (ratingsRes.ok) {
@@ -131,11 +141,25 @@ export default function MonitoringView({ user }: MonitoringViewProps) {
                           <CardDescription className="text-xs">@{op.login}</CardDescription>
                         </div>
                       </div>
-                      <div className="flex items-center gap-2">
-                        <div className={`w-2 h-2 rounded-full ${statusConfig[op.status as keyof typeof statusConfig].color}`} />
-                        <span className="text-sm text-muted-foreground">
-                          {statusConfig[op.status as keyof typeof statusConfig].label}
-                        </span>
+                      <div className="flex items-center gap-4">
+                        {operatorChats[op.id] && op.status === 'online' && (
+                          <Badge variant="default" className="bg-purple-500">
+                            <Icon name="MessageSquare" size={12} className="mr-1" />
+                            Чат
+                          </Badge>
+                        )}
+                        {!operatorChats[op.id] && op.status === 'online' && (
+                          <Badge variant="outline" className="text-orange-500 border-orange-500">
+                            <Icon name="Clock" size={12} className="mr-1" />
+                            Простой
+                          </Badge>
+                        )}
+                        <div className="flex items-center gap-2">
+                          <div className={`w-2 h-2 rounded-full ${statusConfig[op.status as keyof typeof statusConfig].color}`} />
+                          <span className="text-sm text-muted-foreground">
+                            {statusConfig[op.status as keyof typeof statusConfig].label}
+                          </span>
+                        </div>
                       </div>
                     </div>
                   </CardHeader>

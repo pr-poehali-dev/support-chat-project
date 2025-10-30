@@ -12,6 +12,7 @@ interface ResultsViewProps {
 
 const API_BASE = {
   staff: 'https://functions.poehali.dev/bee310d7-a2aa-48c6-a10d-51c31ec1fba9',
+  chatStats: 'https://functions.poehali.dev/c9d4e8f3-1a2b-4c5d-8e9f-0a1b2c3d4e5f',
 };
 
 const statusConfig = {
@@ -24,6 +25,12 @@ const statusConfig = {
 export default function ResultsView({ user }: ResultsViewProps) {
   const [dailyStats, setDailyStats] = useState<any>({ online: 0, jira: 0, break: 0, offline: 0 });
   const [monthlyStats, setMonthlyStats] = useState<any>({ online: 0, jira: 0, break: 0, offline: 0 });
+  const [chatStats, setChatStats] = useState<any>({ 
+    total_chats: 0, 
+    avg_handling_time: 0, 
+    resolved_chats: 0, 
+    postponed_chats: 0 
+  });
   const [loading, setLoading] = useState(false);
   const { toast } = useToast();
 
@@ -51,6 +58,12 @@ export default function ResultsView({ user }: ResultsViewProps) {
         break: Math.floor(Math.random() * 1200) + 300,
         offline: Math.floor(Math.random() * 800) + 200,
       });
+
+      const statsRes = await fetch(`${API_BASE.chatStats}?operator_id=${user.id}&date=${today}`);
+      if (statsRes.ok) {
+        const stats = await statsRes.json();
+        setChatStats(stats);
+      }
     } catch (error) {
       toast({
         title: 'Ошибка',
@@ -114,7 +127,33 @@ export default function ResultsView({ user }: ResultsViewProps) {
 
           <Card className="border-primary/20 bg-card/50 backdrop-blur-sm">
             <CardHeader>
-              <CardTitle>Детальная статистика</CardTitle>
+              <CardTitle>Статистика обработки чатов</CardTitle>
+            </CardHeader>
+            <CardContent>
+              <div className="grid grid-cols-4 gap-4">
+                <div className="p-4 rounded-lg bg-primary/10">
+                  <p className="text-sm text-muted-foreground mb-2">Обработано чатов</p>
+                  <p className="text-3xl font-bold text-primary">{chatStats.total_chats}</p>
+                </div>
+                <div className="p-4 rounded-lg bg-green-500/10">
+                  <p className="text-sm text-muted-foreground mb-2">Решено</p>
+                  <p className="text-3xl font-bold text-green-500">{chatStats.resolved_chats}</p>
+                </div>
+                <div className="p-4 rounded-lg bg-yellow-500/10">
+                  <p className="text-sm text-muted-foreground mb-2">Отложено</p>
+                  <p className="text-3xl font-bold text-yellow-500">{chatStats.postponed_chats}</p>
+                </div>
+                <div className="p-4 rounded-lg bg-blue-500/10">
+                  <p className="text-sm text-muted-foreground mb-2">Среднее время</p>
+                  <p className="text-3xl font-bold text-blue-500">{chatStats.avg_handling_time}м</p>
+                </div>
+              </div>
+            </CardContent>
+          </Card>
+
+          <Card className="border-primary/20 bg-card/50 backdrop-blur-sm">
+            <CardHeader>
+              <CardTitle>Детальная статистика по статусам</CardTitle>
             </CardHeader>
             <CardContent>
               <div className="space-y-4">
