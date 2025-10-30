@@ -195,11 +195,45 @@ def handler(event: Dict[str, Any], context: Any) -> Dict[str, Any]:
                 
                 print(f"Session ID: {session_id}")
                 
-                # Автоназначение оператора - временно NULL
+                # Автоназначение оператора на линии
                 operator_id = None
-                print(f"Assigned operator ID: {operator_id}")
+                try:
+                    cur.execute(
+                        '''SELECT id FROM t_p77168343_support_chat_project.staff 
+                           WHERE on_line = true 
+                           ORDER BY RANDOM() 
+                           LIMIT 1'''
+                    )
+                    operator_row = cur.fetchone()
+                    if operator_row:
+                        operator_id = operator_row[0]
+                        print(f"Auto-assigned operator ID: {operator_id}")
+                    else:
+                        print("No operators online, chat will be unassigned")
+                except Exception as e:
+                    print(f"Warning: Could not auto-assign operator: {e}")
+                    operator_id = None
                 
-                # Создать чат с таймером 15 минут (без client_id пока)
+                # Сохранить или обновить клиента в БД
+                client_email = body_data.get('client_email', '')
+                print(f"Saving/updating client: {client_name}, {client_phone}, {client_email}")
+                try:
+                    cur.execute(
+                        '''INSERT INTO t_p77168343_support_chat_project.clients 
+                           (session_id, name, phone, email, first_contact_at, last_contact_at, total_chats)
+                           VALUES (%s, %s, %s, %s, CURRENT_TIMESTAMP, CURRENT_TIMESTAMP, 1)
+                           ON CONFLICT (session_id) 
+                           DO UPDATE SET 
+                               last_contact_at = CURRENT_TIMESTAMP,
+                               total_chats = t_p77168343_support_chat_project.clients.total_chats + 1,
+                               updated_at = CURRENT_TIMESTAMP''',
+                        (session_id, client_name, client_phone, client_email if client_email else None)
+                    )
+                    print("Client saved/updated successfully")
+                except Exception as client_err:
+                    print(f"Warning: Could not save client: {client_err}")
+                
+                # Создать чат с таймером 15 минут
                 timer_expires = datetime.now() + timedelta(minutes=15)
                 print(f"Creating chat with timer expires at: {timer_expires}")
                 cur.execute(

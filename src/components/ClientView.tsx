@@ -34,25 +34,26 @@ export default function ClientView({ onLogin, user, onLogout }: ClientViewProps)
   const [messageInput, setMessageInput] = useState('');
   const [chatId, setChatId] = useState<number | null>(null);
   const [isInitializing, setIsInitializing] = useState(true);
+  
+  const [clientName, setClientName] = useState('');
+  const [clientPhone, setClientPhone] = useState('');
+  const [clientEmail, setClientEmail] = useState('');
+  const [showClientForm, setShowClientForm] = useState(true);
 
   const { toast } = useToast();
 
-  useEffect(() => {
-    if (!user && !showStaffLogin) {
-      initializeClientChat();
-    }
-  }, []);
-
-  const initializeClientChat = async () => {
+  const initializeClientChat = async (name: string, phone: string, email: string) => {
     try {
-      const sessionId = `guest_${Date.now()}_${Math.random().toString(36).substring(7)}`;
+      setIsInitializing(true);
+      const sessionId = `client_${Date.now()}_${Math.random().toString(36).substring(7)}`;
       
       const response = await fetch(API_BASE.chats, {
         method: 'POST',
         headers: { 'Content-Type': 'application/json' },
         body: JSON.stringify({
-          client_name: 'Гость',
-          client_phone: 'Не указан',
+          client_name: name,
+          client_phone: phone,
+          client_email: email,
           session_id: sessionId,
           message: 'Здравствуйте! Я хочу задать вопрос.',
         }),
@@ -71,20 +72,47 @@ export default function ClientView({ onLogin, user, onLogout }: ClientViewProps)
           },
         ]);
 
-        onLogin({ name: 'Гость', phone: 'Не указан', role: 'client', sessionId, chatId: data.id });
+        onLogin({ name, phone, email, role: 'client', sessionId, chatId: data.id });
+        setShowClientForm(false);
+        
+        toast({
+          title: 'Успешно',
+          description: 'Вы подключены к оператору',
+        });
       } else {
-        console.error('Failed to create chat');
+        const errorData = await response.json().catch(() => ({}));
+        console.error('Failed to create chat:', errorData);
         toast({
           title: 'Ошибка подключения',
-          description: 'Не удалось подключиться к оператору',
+          description: errorData.error || 'Не удалось подключиться к оператору',
           variant: 'destructive',
         });
       }
     } catch (error) {
       console.error('Failed to initialize chat:', error);
+      toast({
+        title: 'Ошибка',
+        description: 'Не удалось подключиться к серверу',
+        variant: 'destructive',
+      });
     } finally {
       setIsInitializing(false);
     }
+  };
+
+  const handleClientFormSubmit = async (e: React.FormEvent) => {
+    e.preventDefault();
+    
+    if (!clientName.trim() || !clientPhone.trim()) {
+      toast({
+        title: 'Заполните поля',
+        description: 'Укажите имя и телефон',
+        variant: 'destructive',
+      });
+      return;
+    }
+    
+    await initializeClientChat(clientName, clientPhone, clientEmail);
   };
 
   const handleStaffLogin = async (e: React.FormEvent) => {
@@ -238,6 +266,94 @@ export default function ClientView({ onLogin, user, onLogout }: ClientViewProps)
                   <Icon name="Send" size={18} />
                 </Button>
               </form>
+            </CardContent>
+          </Card>
+        </div>
+      </div>
+    );
+  }
+
+  if (showClientForm && !user) {
+    return (
+      <div className="min-h-screen flex items-center justify-center p-4 bg-gradient-to-br from-[#0F0F1E] via-[#1A1F2C] to-[#0F0F1E]">
+        <div className="w-full max-w-md animate-fade-in">
+          <Card className="border-primary/20 bg-card/50 backdrop-blur-sm">
+            <CardHeader>
+              <div className="flex items-center gap-3">
+                <div className="w-12 h-12 rounded-xl bg-gradient-to-br from-primary to-accent flex items-center justify-center">
+                  <Icon name="MessageCircle" size={24} className="text-white" />
+                </div>
+                <div>
+                  <CardTitle className="text-2xl">Чат поддержки</CardTitle>
+                  <CardDescription>Заполните данные для связи</CardDescription>
+                </div>
+              </div>
+            </CardHeader>
+            <CardContent>
+              <form onSubmit={handleClientFormSubmit} className="space-y-4">
+                <div className="space-y-2">
+                  <Label htmlFor="name">Ваше имя *</Label>
+                  <Input
+                    id="name"
+                    placeholder="Введите ваше имя"
+                    value={clientName}
+                    onChange={(e) => setClientName(e.target.value)}
+                    className="bg-background/50"
+                    required
+                  />
+                </div>
+                <div className="space-y-2">
+                  <Label htmlFor="phone">Телефон *</Label>
+                  <Input
+                    id="phone"
+                    placeholder="+7 (___) ___-__-__"
+                    value={clientPhone}
+                    onChange={(e) => setClientPhone(e.target.value)}
+                    className="bg-background/50"
+                    required
+                  />
+                </div>
+                <div className="space-y-2">
+                  <Label htmlFor="email">Email (необязательно)</Label>
+                  <Input
+                    id="email"
+                    type="email"
+                    placeholder="your@email.com"
+                    value={clientEmail}
+                    onChange={(e) => setClientEmail(e.target.value)}
+                    className="bg-background/50"
+                  />
+                </div>
+                <Button 
+                  type="submit" 
+                  className="w-full bg-gradient-to-r from-primary to-accent hover:opacity-90"
+                  disabled={isInitializing}
+                >
+                  {isInitializing ? (
+                    <>
+                      <Icon name="Loader2" size={18} className="mr-2 animate-spin" />
+                      Подключение...
+                    </>
+                  ) : (
+                    <>
+                      <Icon name="Send" size={18} className="mr-2" />
+                      Начать чат
+                    </>
+                  )}
+                </Button>
+              </form>
+              
+              <div className="mt-4 pt-4 border-t border-primary/20">
+                <Button
+                  variant="ghost"
+                  size="sm"
+                  onClick={() => setShowStaffLogin(true)}
+                  className="w-full text-muted-foreground hover:text-accent"
+                >
+                  <Icon name="Shield" size={16} className="mr-2" />
+                  Вход для сотрудников
+                </Button>
+              </div>
             </CardContent>
           </Card>
         </div>
