@@ -6,6 +6,7 @@ import ClientsView from './views/ClientsView';
 import NewsView from './views/NewsView';
 import KnowledgeBaseView from './views/KnowledgeBaseView';
 import JiraView from './views/JiraView';
+import AllChatsView from './views/AllChatsView';
 
 interface AdminViewProps {
   user: any;
@@ -16,6 +17,7 @@ export default function AdminView({ user, currentView }: AdminViewProps) {
   return (
     <>
       {currentView === 'staff' && <StaffManagementView user={user} />}
+      {currentView === 'allchats' && <AllChatsView user={user} />}
       {currentView === 'clients' && <ClientsView user={user} />}
       {currentView === 'qc' && <QCPortalView user={user} />}
       {currentView === 'monitoring' && <MonitoringView user={user} />}

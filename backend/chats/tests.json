@@ -15,6 +15,7 @@
       "body": {
         "client_name": "Test Client",
         "client_phone": "+7 999 123 45 67",
+        "session_id": "test-session-123",
         "message": "Hello"
       },
       "expectedStatus": 201,

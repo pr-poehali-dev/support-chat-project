@@ -185,6 +185,11 @@ def handler(event: Dict[str, Any], context: Any) -> Dict[str, Any]:
                     'isBase64Encoded': False
                 }
             
+            # Генерация session_id если не передан
+            if not session_id:
+                import uuid
+                session_id = str(uuid.uuid4())
+            
             # Найти свободного оператора на линии (автоназначение)
             cur.execute(
                 '''SELECT id FROM t_p77168343_support_chat_project.staff 
@@ -197,12 +202,14 @@ def handler(event: Dict[str, Any], context: Any) -> Dict[str, Any]:
             
             # Создать или найти клиента
             cur.execute(
-                '''INSERT INTO t_p77168343_support_chat_project.clients (phone, name, session_id)
-                   VALUES (%s, %s, %s)
-                   ON CONFLICT (phone) DO UPDATE SET 
+                '''INSERT INTO t_p77168343_support_chat_project.clients (phone, name, session_id, total_chats)
+                   VALUES (%s, %s, %s, 1)
+                   ON CONFLICT (session_id) DO UPDATE SET 
                    name = EXCLUDED.name,
-                   session_id = EXCLUDED.session_id,
-                   last_interaction = CURRENT_TIMESTAMP
+                   phone = EXCLUDED.phone,
+                   total_chats = COALESCE(t_p77168343_support_chat_project.clients.total_chats, 0) + 1,
+                   last_interaction = CURRENT_TIMESTAMP,
+                   updated_at = CURRENT_TIMESTAMP
                    RETURNING id''',
                 (client_phone, client_name, session_id)
             )

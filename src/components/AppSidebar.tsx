@@ -130,6 +130,13 @@ export function AppSidebar({ user, onLogout, currentView, onViewChange }: AppSid
               {(isOKK || isSuperAdmin) && (
                 <>
                   <SidebarMenuItem>
+                    <SidebarMenuButton onClick={() => onViewChange('allchats')} isActive={currentView === 'allchats'}>
+                      <Icon name="MessagesSquare" size={18} />
+                      <span>Все чаты</span>
+                    </SidebarMenuButton>
+                  </SidebarMenuItem>
+
+                  <SidebarMenuItem>
                     <SidebarMenuButton onClick={() => onViewChange('clients')} isActive={currentView === 'clients'}>
                       <Icon name="Users" size={18} />
                       <span>Клиенты</span>
