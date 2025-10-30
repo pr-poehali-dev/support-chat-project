@@ -31,10 +31,12 @@ export default function ChatsView({ user }: ChatsViewProps) {
   const [newMessage, setNewMessage] = useState('');
   const [loading, setLoading] = useState(false);
   const [showCloseDialog, setShowCloseDialog] = useState(false);
-  const [closeResolution, setCloseResolution] = useState<'resolved' | 'postponed'>('resolved');
+  const [closeResolution, setCloseResolution] = useState<'resolved' | 'postponed' | 'escalated'>('resolved');
   const [closeComment, setCloseComment] = useState('');
   const [postponeDate, setPostponeDate] = useState('');
   const [postponeTime, setPostponeTime] = useState('');
+  const [escalateToOperator, setEscalateToOperator] = useState('');
+  const [operators, setOperators] = useState<any[]>([]);
   const [timeRemaining, setTimeRemaining] = useState<number | null>(null);
   const [showTimeoutDialog, setShowTimeoutDialog] = useState(false);
   const { toast } = useToast();
@@ -45,9 +47,22 @@ export default function ChatsView({ user }: ChatsViewProps) {
 
   useEffect(() => {
     loadChats();
+    loadOperators();
     const interval = setInterval(loadChats, 30000);
     return () => clearInterval(interval);
   }, []);
+
+  const loadOperators = async () => {
+    try {
+      const response = await fetch('https://functions.poehali.dev/bee310d7-a2aa-48c6-a10d-51c31ec1fba9');
+      if (response.ok) {
+        const data = await response.json();
+        setOperators(data.filter((s: any) => s.role === 'operator' || s.role === 'okk'));
+      }
+    } catch (error) {
+      console.error('Failed to load operators:', error);
+    }
+  };
 
   useEffect(() => {
     if (selectedChat) {
@@ -247,6 +262,15 @@ export default function ChatsView({ user }: ChatsViewProps) {
       return;
     }
 
+    if (closeResolution === 'escalated' && !escalateToOperator) {
+      toast({
+        title: 'Ошибка',
+        description: 'Выберите оператора для эскалации',
+        variant: 'destructive',
+      });
+      return;
+    }
+
     closeChat();
   };
 
@@ -254,31 +278,51 @@ export default function ChatsView({ user }: ChatsViewProps) {
     if (!selectedChat) return;
 
     try {
-      const scheduledFor = closeResolution === 'postponed' 
-        ? new Date(`${postponeDate}T${postponeTime}`).toISOString()
-        : null;
+      let response;
 
-      const response = await fetch(API_BASE.chats, {
-        method: 'PUT',
-        headers: { 'Content-Type': 'application/json' },
-        body: JSON.stringify({
-          id: selectedChat.id,
-          status: 'closed',
-          resolution: closeResolution,
-          resolution_comment: closeComment,
-          scheduled_for: scheduledFor,
-        }),
-      });
+      if (closeResolution === 'escalated') {
+        response = await fetch(API_BASE.chats, {
+          method: 'PUT',
+          headers: { 'Content-Type': 'application/json' },
+          body: JSON.stringify({
+            id: selectedChat.id,
+            resolution: 'escalated',
+            resolution_comment: closeComment,
+            escalate_to_operator_id: parseInt(escalateToOperator),
+          }),
+        });
+      } else {
+        const scheduledFor = closeResolution === 'postponed' 
+          ? new Date(`${postponeDate}T${postponeTime}`).toISOString()
+          : null;
+
+        response = await fetch(API_BASE.chats, {
+          method: 'PUT',
+          headers: { 'Content-Type': 'application/json' },
+          body: JSON.stringify({
+            id: selectedChat.id,
+            status: 'closed',
+            resolution: closeResolution,
+            resolution_comment: closeComment,
+            scheduled_for: scheduledFor,
+          }),
+        });
+      }
 
       if (response.ok) {
+        let description = 'Чат закрыт';
+        if (closeResolution === 'postponed') description = 'Чат отложен';
+        if (closeResolution === 'escalated') description = 'Чат эскалирован';
+        
         toast({
           title: 'Успешно',
-          description: closeResolution === 'resolved' ? 'Чат закрыт' : 'Чат отложен',
+          description,
         });
         setShowCloseDialog(false);
         setCloseComment('');
         setPostponeDate('');
         setPostponeTime('');
+        setEscalateToOperator('');
         loadChats();
         setSelectedChat(null);
       }
@@ -507,6 +551,14 @@ export default function ChatsView({ user }: ChatsViewProps) {
                   <Icon name="Clock" size={16} className="mr-2" />
                   Отложить
                 </Button>
+                <Button
+                  variant={closeResolution === 'escalated' ? 'default' : 'outline'}
+                  onClick={() => setCloseResolution('escalated')}
+                  className="flex-1"
+                >
+                  <Icon name="ArrowUp" size={16} className="mr-2" />
+                  Эскалировать
+                </Button>
               </div>
             </div>
 
@@ -532,6 +584,24 @@ export default function ChatsView({ user }: ChatsViewProps) {
               </div>
             )}
 
+            {closeResolution === 'escalated' && (
+              <div className="space-y-2">
+                <Label>Оператор для эскалации *</Label>
+                <select
+                  className="w-full mt-1 p-2 border rounded-md bg-background"
+                  value={escalateToOperator}
+                  onChange={(e) => setEscalateToOperator(e.target.value)}
+                >
+                  <option value="">Выберите оператора...</option>
+                  {operators.map((op) => (
+                    <option key={op.id} value={op.id}>
+                      {op.name} ({op.role === 'okk' ? 'ОКК' : 'Оператор'})
+                    </option>
+                  ))}
+                </select>
+              </div>
+            )}
+
             <div className="space-y-2">
               <Label>Комментарий *</Label>
               <Textarea
@@ -544,7 +614,10 @@ export default function ChatsView({ user }: ChatsViewProps) {
           </div>
 
           <DialogFooter>
-            <Button variant="outline" onClick={() => setShowCloseDialog(false)}>
+            <Button variant="outline" onClick={() => {
+              setShowCloseDialog(false);
+              setEscalateToOperator('');
+            }}>
               Отмена
             </Button>
             <Button onClick={handleCloseChat}>

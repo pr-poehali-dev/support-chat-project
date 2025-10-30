@@ -53,6 +53,7 @@ export function AppSidebar({ user, onLogout, currentView, onViewChange }: AppSid
   const isOperator = user.role === 'operator';
   const isOKK = user.role === 'okk';
   const isSuperAdmin = user.role === 'superadmin';
+  const isEditor = user.role === 'editor';
 
   return (
     <Sidebar className="border-r border-primary/20 bg-card/50 backdrop-blur-sm">
@@ -67,6 +68,7 @@ export function AppSidebar({ user, onLogout, currentView, onViewChange }: AppSid
               {user.role === 'operator' && 'Оператор КЦ'}
               {user.role === 'okk' && 'ОКК'}
               {user.role === 'superadmin' && 'Супер Админ'}
+              {user.role === 'editor' && 'Редактор'}
             </p>
           </div>
         </div>
@@ -165,6 +167,20 @@ export function AppSidebar({ user, onLogout, currentView, onViewChange }: AppSid
                   </SidebarMenuButton>
                 </SidebarMenuItem>
               )}
+
+              <SidebarMenuItem>
+                <SidebarMenuButton onClick={() => onViewChange('news')} isActive={currentView === 'news'}>
+                  <Icon name="Newspaper" size={18} />
+                  <span>Новости</span>
+                </SidebarMenuButton>
+              </SidebarMenuItem>
+
+              <SidebarMenuItem>
+                <SidebarMenuButton onClick={() => onViewChange('kb')} isActive={currentView === 'kb'}>
+                  <Icon name="BookOpen" size={18} />
+                  <span>База знаний</span>
+                </SidebarMenuButton>
+              </SidebarMenuItem>
             </SidebarMenu>
           </SidebarGroupContent>
         </SidebarGroup>

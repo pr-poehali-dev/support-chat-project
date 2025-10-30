@@ -5,6 +5,8 @@ import MonitoringView from './views/MonitoringView';
 import ResultsView from './views/ResultsView';
 import AnalyticsView from './views/AnalyticsView';
 import ClientsView from './views/ClientsView';
+import NewsView from './views/NewsView';
+import KnowledgeBaseView from './views/KnowledgeBaseView';
 
 interface StaffViewProps {
   user: any;
@@ -21,6 +23,8 @@ export default function StaffView({ user, currentView }: StaffViewProps) {
       {currentView === 'qc' && user.role === 'okk' && <QCPortalView user={user} />}
       {currentView === 'monitoring' && user.role === 'okk' && <MonitoringView user={user} />}
       {currentView === 'analytics' && user.role === 'okk' && <AnalyticsView user={user} />}
+      {currentView === 'news' && <NewsView user={user} />}
+      {currentView === 'kb' && <KnowledgeBaseView user={user} />}
     </>
   );
 }

@@ -33,7 +33,7 @@ export default function QCPortalView({ user }: QCPortalViewProps) {
 
   const loadClosedChats = async () => {
     try {
-      const response = await fetch(`${API_BASE.chats}?status=closed`);
+      const response = await fetch(`${API_BASE.chats}?status=qc`);
       if (response.ok) {
         const data = await response.json();
         setClosedChats(data.filter((c: any) => c.operator_id !== null));
@@ -42,6 +42,61 @@ export default function QCPortalView({ user }: QCPortalViewProps) {
       toast({
         title: 'Ошибка',
         description: 'Не удалось загрузить чаты',
+        variant: 'destructive',
+      });
+    }
+  };
+
+  const handleSetProcessing = async (chatId: number) => {
+    try {
+      const response = await fetch(API_BASE.chats, {
+        method: 'PUT',
+        headers: { 'Content-Type': 'application/json' },
+        body: JSON.stringify({
+          id: chatId,
+          qc_status: 'processing_qc',
+        }),
+      });
+
+      if (response.ok) {
+        toast({
+          title: 'Успешно',
+          description: 'Чат взят в обработку',
+        });
+        loadClosedChats();
+      }
+    } catch (error) {
+      toast({
+        title: 'Ошибка',
+        description: 'Не удалось обновить статус',
+        variant: 'destructive',
+      });
+    }
+  };
+
+  const handleFinishProcessing = async (chatId: number) => {
+    try {
+      const response = await fetch(API_BASE.chats, {
+        method: 'PUT',
+        headers: { 'Content-Type': 'application/json' },
+        body: JSON.stringify({
+          id: chatId,
+          qc_status: 'closed',
+        }),
+      });
+
+      if (response.ok) {
+        toast({
+          title: 'Успешно',
+          description: 'Обработка завершена',
+        });
+        loadClosedChats();
+        setSelectedChat(null);
+      }
+    } catch (error) {
+      toast({
+        title: 'Ошибка',
+        description: 'Не удалось завершить обработку',
         variant: 'destructive',
       });
     }
