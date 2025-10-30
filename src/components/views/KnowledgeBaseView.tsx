@@ -38,7 +38,7 @@ export default function KnowledgeBaseView({ user }: KnowledgeBaseViewProps) {
   const [loading, setLoading] = useState(false);
   const { toast } = useToast();
 
-  const canEdit = user.role === 'editor' || user.role === 'super_admin';
+  const canEdit = user.role === 'editor' || user.role === 'superadmin';
 
   useEffect(() => {
     loadArticles();

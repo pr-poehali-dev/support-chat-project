@@ -5,6 +5,7 @@ import AnalyticsView from './views/AnalyticsView';
 import ClientsView from './views/ClientsView';
 import NewsView from './views/NewsView';
 import KnowledgeBaseView from './views/KnowledgeBaseView';
+import JiraView from './views/JiraView';
 
 interface AdminViewProps {
   user: any;
@@ -19,6 +20,7 @@ export default function AdminView({ user, currentView }: AdminViewProps) {
       {currentView === 'qc' && <QCPortalView user={user} />}
       {currentView === 'monitoring' && <MonitoringView user={user} />}
       {currentView === 'analytics' && <AnalyticsView user={user} />}
+      {currentView === 'jira' && <JiraView user={user} />}
       {currentView === 'news' && <NewsView user={user} />}
       {currentView === 'kb' && <KnowledgeBaseView user={user} />}
     </>

@@ -242,8 +242,24 @@ export default function QCPortalView({ user }: QCPortalViewProps) {
                         {new Date(selectedChat.closed_at).toLocaleString('ru-RU')}
                       </span>
                     </div>
+                    <div className="flex justify-between items-center">
+                      <span className="text-sm text-muted-foreground">Статус QC:</span>
+                      <Badge variant={selectedChat.qc_status === 'processing_qc' ? 'default' : 'outline'}>
+                        {selectedChat.qc_status === 'processing_qc' ? 'В обработке' : 'Ожидает обработки'}
+                      </Badge>
+                    </div>
                   </div>
                 </div>
+
+                {selectedChat.qc_status !== 'processing_qc' && (
+                  <Button 
+                    onClick={() => handleSetProcessing(selectedChat.id)}
+                    className="w-full"
+                  >
+                    <Icon name="Play" size={16} className="mr-2" />
+                    Взять в обработку
+                  </Button>
+                )}
 
                 <ScrollArea className="h-[250px] border border-primary/10 rounded-lg p-4">
                   <div className="space-y-3">
@@ -256,42 +272,54 @@ export default function QCPortalView({ user }: QCPortalViewProps) {
                   </div>
                 </ScrollArea>
 
-                <div className="space-y-4">
-                  <div className="space-y-3">
-                    <div className="flex items-center justify-between">
-                      <Label>Оценка (0-100)</Label>
-                      <span className={`text-2xl font-bold ${getScoreColor(score[0])}`}>
-                        {score[0]}
-                      </span>
+                {selectedChat.qc_status === 'processing_qc' && (
+                  <div className="space-y-4">
+                    <div className="space-y-3">
+                      <div className="flex items-center justify-between">
+                        <Label>Оценка (0-100)</Label>
+                        <span className={`text-2xl font-bold ${getScoreColor(score[0])}`}>
+                          {score[0]}
+                        </span>
+                      </div>
+                      <Slider
+                        value={score}
+                        onValueChange={setScore}
+                        max={100}
+                        step={5}
+                        className="w-full"
+                      />
+                      <div className="flex justify-between text-xs text-muted-foreground">
+                        <span>Плохо (0)</span>
+                        <span>Отлично (100)</span>
+                      </div>
                     </div>
-                    <Slider
-                      value={score}
-                      onValueChange={setScore}
-                      max={100}
-                      step={5}
-                      className="w-full"
-                    />
-                    <div className="flex justify-between text-xs text-muted-foreground">
-                      <span>Плохо (0)</span>
-                      <span>Отлично (100)</span>
+
+                    <div className="space-y-2">
+                      <Label>Комментарий для оператора</Label>
+                      <Textarea
+                        value={comment}
+                        onChange={(e) => setComment(e.target.value)}
+                        placeholder="Опишите сильные и слабые стороны..."
+                        rows={4}
+                      />
+                    </div>
+
+                    <div className="flex gap-2">
+                      <Button onClick={handleSubmitRating} className="flex-1">
+                        <Icon name="Save" size={18} className="mr-2" />
+                        {existingRating ? 'Обновить оценку' : 'Сохранить оценку'}
+                      </Button>
+                      <Button 
+                        onClick={() => handleFinishProcessing(selectedChat.id)}
+                        variant="outline"
+                        className="flex-1"
+                      >
+                        <Icon name="CheckCircle" size={18} className="mr-2" />
+                        Завершить обработку
+                      </Button>
                     </div>
                   </div>
-
-                  <div className="space-y-2">
-                    <Label>Комментарий для оператора</Label>
-                    <Textarea
-                      value={comment}
-                      onChange={(e) => setComment(e.target.value)}
-                      placeholder="Опишите сильные и слабые стороны..."
-                      rows={4}
-                    />
-                  </div>
-
-                  <Button onClick={handleSubmitRating} className="w-full">
-                    <Icon name="Save" size={18} className="mr-2" />
-                    {existingRating ? 'Обновить оценку' : 'Сохранить оценку'}
-                  </Button>
-                </div>
+                )}
               </div>
             )}
           </CardContent>

@@ -73,7 +73,7 @@ export function AppSidebar({ user, onLogout, currentView, onViewChange }: AppSid
           </div>
         </div>
 
-        {(isOperator || isOKK) && (
+        {(isOperator || isOKK || isSuperAdmin) && (
           <div className="mt-4">
             <Select value={currentStatus} onValueChange={handleStatusChange}>
               <SelectTrigger className="w-full">
@@ -167,6 +167,13 @@ export function AppSidebar({ user, onLogout, currentView, onViewChange }: AppSid
                   </SidebarMenuButton>
                 </SidebarMenuItem>
               )}
+
+              <SidebarMenuItem>
+                <SidebarMenuButton onClick={() => onViewChange('jira')} isActive={currentView === 'jira'}>
+                  <Icon name="ListTodo" size={18} />
+                  <span>Jira Portal</span>
+                </SidebarMenuButton>
+              </SidebarMenuItem>
 
               <SidebarMenuItem>
                 <SidebarMenuButton onClick={() => onViewChange('news')} isActive={currentView === 'news'}>

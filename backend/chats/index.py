@@ -43,7 +43,7 @@ def handler(event: Dict[str, Any], context: Any) -> Dict[str, Any]:
                     '''SELECT c.id, c.client_name, c.client_phone, c.operator_id, 
                        s.name as operator_name, c.status, c.created_at, c.closed_at,
                        c.resolution, c.resolution_comment, c.handling_time,
-                       COUNT(m.id) as message_count
+                       c.qc_status, COUNT(m.id) as message_count
                        FROM t_p77168343_support_chat_project.chats c
                        LEFT JOIN t_p77168343_support_chat_project.staff s ON c.operator_id = s.id
                        LEFT JOIN t_p77168343_support_chat_project.messages m ON c.id = m.chat_id
@@ -64,7 +64,8 @@ def handler(event: Dict[str, Any], context: Any) -> Dict[str, Any]:
                     'resolution': row[8],
                     'resolution_comment': row[9],
                     'handling_time': row[10],
-                    'message_count': row[11]
+                    'qc_status': row[11],
+                    'message_count': row[12]
                 } for row in rows]
             
             # Поиск по session_id (для восстановления чата клиента)
@@ -435,10 +436,18 @@ def handler(event: Dict[str, Any], context: Any) -> Dict[str, Any]:
             # Обработка QC (смена статуса с 'qc' на 'processing_qc' или 'closed')
             if 'qc_status' in body:
                 qc_status = body['qc_status']
-                cur.execute(
-                    'UPDATE t_p77168343_support_chat_project.chats SET status = %s WHERE id = %s',
-                    (qc_status, chat_id)
-                )
+                if qc_status == 'closed':
+                    cur.execute(
+                        '''UPDATE t_p77168343_support_chat_project.chats 
+                           SET qc_status = %s, status = 'closed' 
+                           WHERE id = %s''',
+                        (qc_status, chat_id)
+                    )
+                else:
+                    cur.execute(
+                        'UPDATE t_p77168343_support_chat_project.chats SET qc_status = %s WHERE id = %s',
+                        (qc_status, chat_id)
+                    )
                 conn.commit()
                 cur.close()
                 conn.close()
