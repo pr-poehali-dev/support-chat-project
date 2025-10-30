@@ -50,18 +50,31 @@ export default function ClientView({ onLogin, user, onLogout }: ClientViewProps)
     }
 
     try {
+      const sessionId = `client_${Date.now()}_${Math.random().toString(36).substring(7)}`;
+      
+      console.log('Creating chat with data:', {
+        client_name: clientName,
+        client_phone: clientPhone,
+        session_id: sessionId,
+      });
+      
       const response = await fetch(API_BASE.chats, {
         method: 'POST',
         headers: { 'Content-Type': 'application/json' },
         body: JSON.stringify({
           client_name: clientName,
           client_phone: clientPhone,
+          session_id: sessionId,
           message: `Здравствуйте! Меня зовут ${clientName}`,
         }),
       });
 
+      console.log('Response status:', response.status);
+      const responseText = await response.text();
+      console.log('Response body:', responseText);
+
       if (response.ok) {
-        const data = await response.json();
+        const data = JSON.parse(responseText);
         setChatId(data.id);
         
         setMessages([
@@ -73,17 +86,33 @@ export default function ClientView({ onLogin, user, onLogout }: ClientViewProps)
           },
         ]);
 
-        onLogin({ name: clientName, phone: clientPhone, role: 'client' });
+        onLogin({ name: clientName, phone: clientPhone, role: 'client', sessionId });
         
         toast({
           title: 'Добро пожаловать!',
           description: 'Вы подключены к оператору',
         });
+      } else {
+        let errorMessage = 'Не удалось создать чат';
+        try {
+          const errorData = JSON.parse(responseText);
+          errorMessage = errorData.error || errorMessage;
+        } catch {
+          errorMessage = responseText || errorMessage;
+        }
+        
+        console.error('Chat creation failed:', errorMessage);
+        toast({
+          title: 'Ошибка',
+          description: errorMessage,
+          variant: 'destructive',
+        });
       }
     } catch (error) {
+      console.error('Failed to create chat:', error);
       toast({
         title: 'Ошибка',
-        description: 'Не удалось создать чат',
+        description: `Ошибка сети: ${error instanceof Error ? error.message : 'Неизвестная ошибка'}`,
         variant: 'destructive',
       });
     }
