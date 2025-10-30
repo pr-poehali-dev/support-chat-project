@@ -30,6 +30,7 @@ export default function ChatsView({ user }: ChatsViewProps) {
   const [showCloseDialog, setShowCloseDialog] = useState(false);
   const [showSaveClientDialog, setShowSaveClientDialog] = useState(false);
   const [operators, setOperators] = useState<any[]>([]);
+  const [previousChatCount, setPreviousChatCount] = useState(0);
   const { toast } = useToast();
 
   const canViewClosed = user.permissions?.chats?.closed === true;
@@ -37,7 +38,12 @@ export default function ChatsView({ user }: ChatsViewProps) {
   useEffect(() => {
     loadChats();
     loadOperators();
-    const interval = setInterval(loadChats, 30000);
+    
+    if ('Notification' in window && Notification.permission === 'default') {
+      Notification.requestPermission();
+    }
+    
+    const interval = setInterval(loadChats, 15000);
     return () => clearInterval(interval);
   }, []);
 
@@ -66,6 +72,24 @@ export default function ChatsView({ user }: ChatsViewProps) {
       const activeResponse = await fetch(`${API_BASE.chats}?status=active&operator_id=${user.id}`);
       if (activeResponse.ok) {
         const activeData = await activeResponse.json();
+        
+        if (previousChatCount > 0 && activeData.length > previousChatCount) {
+          const newChatsCount = activeData.length - previousChatCount;
+          toast({
+            title: '🔔 Новый чат!',
+            description: `У вас ${newChatsCount} новых чатов`,
+            duration: 5000,
+          });
+          
+          if ('Notification' in window && Notification.permission === 'granted') {
+            new Notification('Новый чат в системе поддержки', {
+              body: `У вас ${newChatsCount} новых чатов`,
+              icon: '/favicon.ico',
+            });
+          }
+        }
+        
+        setPreviousChatCount(activeData.length);
         setActiveChats(activeData);
       }
 

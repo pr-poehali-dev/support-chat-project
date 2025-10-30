@@ -33,7 +33,7 @@ export default function ClientView({ onLogin, user, onLogout }: ClientViewProps)
   const [messages, setMessages] = useState<Message[]>([]);
   const [messageInput, setMessageInput] = useState('');
   const [chatId, setChatId] = useState<number | null>(null);
-  const [isInitializing, setIsInitializing] = useState(true);
+  const [isInitializing, setIsInitializing] = useState(false);
   
   const [clientName, setClientName] = useState('');
   const [clientPhone, setClientPhone] = useState('');
@@ -347,7 +347,10 @@ export default function ClientView({ onLogin, user, onLogout }: ClientViewProps)
                 <Button
                   variant="ghost"
                   size="sm"
-                  onClick={() => setShowStaffLogin(true)}
+                  onClick={() => {
+                    setShowStaffLogin(true);
+                    setShowClientForm(false);
+                  }}
                   className="w-full text-muted-foreground hover:text-accent"
                 >
                   <Icon name="Shield" size={16} className="mr-2" />
@@ -408,7 +411,10 @@ export default function ClientView({ onLogin, user, onLogout }: ClientViewProps)
                   <Button
                     type="button"
                     variant="outline"
-                    onClick={() => setShowStaffLogin(false)}
+                    onClick={() => {
+                      setShowStaffLogin(false);
+                      setShowClientForm(true);
+                    }}
                     className="border-primary/20"
                   >
                     Назад

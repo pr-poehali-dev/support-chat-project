@@ -62,6 +62,7 @@ export default function AllChatsView({ user }: AllChatsViewProps) {
   const [messages, setMessages] = useState<Message[]>([]);
   const [loadingMessages, setLoadingMessages] = useState(false);
   const [statusFilter, setStatusFilter] = useState<string>('all');
+  const [previousUnassignedCount, setPreviousUnassignedCount] = useState(0);
   
   const { toast } = useToast();
 
@@ -80,6 +81,25 @@ export default function AllChatsView({ user }: AllChatsViewProps) {
       
       allChats.sort((a, b) => new Date(b.created_at).getTime() - new Date(a.created_at).getTime());
       
+      const unassignedCount = allChats.filter(c => c.status === 'active' && !c.operator_id).length;
+      
+      if (previousUnassignedCount > 0 && unassignedCount > previousUnassignedCount) {
+        const newUnassigned = unassignedCount - previousUnassignedCount;
+        toast({
+          title: '🆕 Неназначенные чаты',
+          description: `${newUnassigned} новых чатов ждут назначения`,
+          duration: 7000,
+        });
+        
+        if ('Notification' in window && Notification.permission === 'granted') {
+          new Notification('Новые неназначенные чаты', {
+            body: `${newUnassigned} чатов ждут назначения оператора`,
+            icon: '/favicon.ico',
+          });
+        }
+      }
+      
+      setPreviousUnassignedCount(unassignedCount);
       setChats(allChats);
     } catch (error) {
       toast({
@@ -113,7 +133,12 @@ export default function AllChatsView({ user }: AllChatsViewProps) {
 
   useEffect(() => {
     fetchAllChats();
-    const interval = setInterval(fetchAllChats, 30000);
+    
+    if ('Notification' in window && Notification.permission === 'default') {
+      Notification.requestPermission();
+    }
+    
+    const interval = setInterval(fetchAllChats, 15000);
     return () => clearInterval(interval);
   }, []);
 
